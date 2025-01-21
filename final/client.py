@@ -15,9 +15,7 @@ def printMenu():
 
 def seeAllFiles(socket):
     files = socket.recv(1024).decode('utf-8')
-    
     file_list = files.split('\n')
-    
     print("Available files:")
     for file in file_list:
         if file.strip():
@@ -69,6 +67,18 @@ def uploadFile(socket):
     else:
         print("File does not exist")
 
+def ocrFile(socket):
+    print("ocr file functionality")
+
+def ocrDir(socket):
+    print("ocr dir functionality")
+
+def convertFile(socket):
+    print("convert functionality")
+
+def convertDir(socket):
+    print("convert dir functionality")
+
 def main():
     host = '192.168.98.157'
     port = 5051
@@ -97,7 +107,20 @@ def main():
             elif choice == 3:
                 s.send(str(choice).encode('utf-8'))
                 uploadFile(s)
+            elif choice == 4:
+                s.send(str(choice).encode('utf-8'))
+                ocrFile(s)
+            elif choice == 5:
+                s.send(str(choice).encode('utf-8'))
+                ocrDir(s)
+            elif choice == 6:
+                s.send(str(choice).encode('utf-8'))
+                convertFile(s)
+            elif choice == 7:
+                s.send(str(choice).encode('utf-8'))
+                convertDir(s)
             elif choice == 8:
+                s.send(str(choice).encode('utf-8'))
                 print("Exiting the program.")
                 running = False
             else:

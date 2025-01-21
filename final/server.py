@@ -44,7 +44,19 @@ def sendListFiles(name, socket):
     file_list = "\n".join(files)
     socket.send(file_list.encode('utf-8'))
 
-def ManageConnection(name, c):
+def ocrFile(name, socket):
+    print("ocr file")
+
+def ocrAllFiles(name, socket):
+    print("ocr all files")
+
+def convertFile(name, socket):
+    print("convert file")
+
+def convertAllFiles(name, socket):
+    print("converting files")
+
+def ManageConnection(name, c, addr):
     while True:
         try:
             choice = c.recv(1024).decode('utf-8')
@@ -56,6 +68,17 @@ def ManageConnection(name, c):
                 SendFile("sendThread", c)
             elif choice == "3":
                 ReceiveFile("receiveThread", c)
+            elif choice == "4":
+                ocrFile("ocrThread", c)
+            elif choice == "5":
+                ocrAllFiles("ocrAllThread", c)
+            elif choice == "6":
+                convertFile("convertThread", c)
+            elif choice == "7":
+                convertAllFiles("convertAllThread", c)
+            elif choice == "8":
+                print("Client Disconnected")
+                break
         except Exception as e:
             print(f"Error handling client: {e}")
             break
@@ -76,7 +99,7 @@ def main():
         c, addr = s.accept()
         print("client connected ip: " + str(addr))
 
-        t = threading.Thread(target=ManageConnection, args=("manageThread", c))
+        t = threading.Thread(target=ManageConnection, args=("manageThread", c, addr))
         t.start()
 
 if __name__ == "__main__":
