@@ -7,38 +7,44 @@ def printMenu():
     print("3. Upload File")
     print("4. Exit")
 
-def seeAllFiles():
-    print("Functionality to list all files goes here.")
+def seeAllFiles(socket):
+    files = socket.recv(1024).decode('utf-8')
+    
+    file_list = files.split('\n')
+    
+    print("Available files:")
+    for file in file_list:
+        if file.strip():
+            print(f"- {file}")
 
-def downloadFile(s):
+def downloadFile(socket):
     filename = input("File name: ")
     if filename != 'q':
-        s.send(filename.encode('utf-8'))
-        data = s.recv(1024)
+        socket.send(filename.encode('utf-8'))
+        data = socket.recv(1024)
         data = data.decode('utf-8')
         if data[:6] == 'EXISTS':
             filesize = int(data[6:])
             message = input("File Exists. Download(Y/N) -> ")
             if message.lower() == 'y':
                 response = "OK"
-                s.send(response.encode('utf-8'))
+                socket.send(response.encode('utf-8'))
                 output_dir = os.path.dirname("new_" + filename)
                 if output_dir and not os.path.exists(output_dir):
                     os.makedirs(output_dir)
                 
                 with open("new_" + filename, 'wb') as f:
-                    data = s.recv(1024)
+                    data = socket.recv(1024)
                     totalReceived = len(data)
                     f.write(data)
                     while totalReceived < filesize:
-                        data = s.recv(1024)
+                        data = socket.recv(1024)
                         totalReceived += len(data)
                         f.write(data)
                         print(f"Percentage Downloaded: {((totalReceived / filesize) * 100):.2f}")
                     print("Download Complete")
         else:
             print("File does not exist")
-        s.close()
 
 def uploadFile(socket):
     filename = input("File name: ")
@@ -54,7 +60,6 @@ def uploadFile(socket):
         socket.send(b"EOF")
     else:
         print("File does not exist")
-    socket.close()
 
 def main():
     host = '192.168.98.157'
@@ -76,7 +81,8 @@ def main():
                     print("Invalid Input, must be an integer.")
 
             if choice == 1:
-                seeAllFiles()
+                s.send(str(choice).encode('utf-8'))
+                seeAllFiles(s)
             elif choice == 2:
                 s.send(str(choice).encode('utf-8'))
                 downloadFile(s)

@@ -20,8 +20,6 @@ def SendFile(name, socket):
         response = "ERR"
         socket.send(response.encode("utf-8"))
 
-    socket.close()
-
 def ReceiveFile(name, socket):
     filename = socket.recv(1024).decode('utf-8')
     filesize = socket.recv(1024).decode('utf-8')
@@ -34,17 +32,34 @@ def ReceiveFile(name, socket):
                 break
             totalReceived += len(data)
             f.write(data)
-    socket.close()
 
-def ManageConnection(name, socket, c):
-    choice = c.recv(1024).decode('utf-8')
-    if choice == "2":
-        t = threading.Thread(target=SendFile, args=("sendThread", c))
-        t.start()
-    elif choice == "3":
-        t = threading.Thread(target=ReceiveFile, args=("receiveThread", c))
-        t.start()
-    choice = None
+def sendListFiles(name, socket):
+    # Walk through the directory and list files
+    directory_path = "files"
+    files = []
+    for root, dirs, filenames in os.walk(directory_path):
+        for filename in filenames:
+            files.append(filename)
+            
+    file_list = "\n".join(files)
+    socket.send(file_list.encode('utf-8'))
+
+def ManageConnection(name, c):
+    while True:
+        try:
+            choice = c.recv(1024).decode('utf-8')
+            if not choice:
+                break
+            elif choice == "1":
+                sendListFiles("allFilesThread", c)
+            elif choice == "2":
+                SendFile("sendThread", c)
+            elif choice == "3":
+                ReceiveFile("receiveThread", c)
+        except Exception as e:
+            print(f"Error handling client: {e}")
+            break
+    c.close()
 
 def main():
     host = '192.168.98.157'
@@ -61,7 +76,7 @@ def main():
         c, addr = s.accept()
         print("client connected ip: " + str(addr))
 
-        t = threading.Thread(target=ManageConnection, args=("manageThread", s, c))
+        t = threading.Thread(target=ManageConnection, args=("manageThread", c))
         t.start()
 
 if __name__ == "__main__":
