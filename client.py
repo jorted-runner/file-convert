@@ -24,35 +24,33 @@ def seeAllFiles(socket):
 def downloadFile(socket):
     filename = input("File name: ")
     path = input("Desired Directory Path: ")
-    if filename != 'q':
-        socket.send(filename.encode('utf-8'))
-        data = socket.recv(1024)
-        data = data.decode('utf-8')
-        if data[:6] == 'EXISTS':
-            filesize = int(data[6:])
-            message = input("File Exists. Download(Y/N) -> ")
-            if message.lower() == 'y':
-                response = "OK"
-                socket.send(response.encode('utf-8'))
-                if path != "":
-                    new_file = os.path.join(path, filename)
-                else:
-                    new_file = filename
-                with open(new_file, 'wb') as f:
+    socket.send(filename.encode('utf-8'))
+    data = socket.recv(1024)
+    data = data.decode('utf-8')
+    if data[:6] == 'EXISTS':
+        filesize = int(data[6:])
+        message = input("File Exists. Download(Y/N) -> ")
+        if message.lower() == 'y':
+            response = "OK"
+            socket.send(response.encode('utf-8'))
+            if path != "":
+                new_file = os.path.join(path, filename)
+            else:
+                new_file = filename
+            with open(new_file, 'wb') as f:
+                data = socket.recv(1024)
+                totalReceived = len(data)
+                f.write(data)
+                while totalReceived < filesize:
                     data = socket.recv(1024)
-                    totalReceived = len(data)
+                    totalReceived += len(data)
                     f.write(data)
-                    while totalReceived < filesize:
-                        data = socket.recv(1024)
-                        totalReceived += len(data)
-                        f.write(data)
-                        print(f"Percentage Downloaded: {((totalReceived / filesize) * 100):.2f}")
-                    print("Download Complete")
-        else:
-            print("File does not exist")
+                    print(f"Percentage Downloaded: {((totalReceived / filesize) * 100):.2f}")
+                print("Download Complete")
+    else:
+        print("File does not exist")
 
-def uploadFile(socket):
-    filename = input("File name: ")
+def sendFile(filename, socket):
     base_filename = Path(filename).name
     if os.path.isfile(filename):
         socket.send(base_filename.encode('utf-8'))
@@ -67,6 +65,13 @@ def uploadFile(socket):
     else:
         print("File does not exist")
 
+def uploadFile(socket):
+    filepath = input("File name: ")
+    sendFile(filepath, socket)
+
+def receiveFile(filepath, socket):
+    print("receive file")    
+
 def ocrFile(socket):
     print("ocr file functionality")
 
@@ -74,14 +79,16 @@ def ocrDir(socket):
     print("ocr dir functionality")
 
 def convertFile(socket):
-    print("convert functionality")
+    fileToConvert = input("Path to file to convert: ")
+    sendFile(fileToConvert, socket)
+    receiveFile(fileToConvert, socket)
 
 def convertDir(socket):
     print("convert dir functionality")
 
 def main():
     host = '192.168.98.157'
-    port = 5051
+    port = 5050
 
     try:
         s = socket.socket()

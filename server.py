@@ -2,7 +2,7 @@ import socket
 import threading
 import os
 
-def SendFile(name, socket):
+def sendFile(name, socket):
     filename = f"server_files/{socket.recv(1024).decode('utf-8')}"
     if os.path.isfile(filename):
         response = "EXISTS " + str(os.path.getsize(filename))
@@ -20,10 +20,13 @@ def SendFile(name, socket):
         response = "ERR"
         socket.send(response.encode("utf-8"))
 
-def ReceiveFile(name, socket):
+def receiveFile(name, socket, addr):
     filename = socket.recv(1024).decode('utf-8')
     filesize = socket.recv(1024).decode('utf-8')
-    filename = "server_files/" + filename
+    port = addr[1]
+    dirname = "server_files/" + str(port)
+    os.mkdir(dirname)
+    filename = dirname + "/" + filename    
     with open(filename, 'wb') as f:
         totalReceived = 0
         while totalReceived < int(filesize):
@@ -47,11 +50,11 @@ def sendListFiles(name, socket):
 def ocrFile(name, socket):
     print("ocr file")
 
-def ocrAllFiles(name, socket):
+def ocrAllFiles(addr, name, socket):
     print("ocr all files")
 
-def convertFile(name, socket):
-    print("convert file")
+def convertFile(addr, name, socket):
+    receiveFile(name, socket, addr)
 
 def convertAllFiles(name, socket):
     print("converting files")
@@ -65,15 +68,15 @@ def ManageConnection(name, c, addr):
             elif choice == "1":
                 sendListFiles("allFilesThread", c)
             elif choice == "2":
-                SendFile("sendThread", c)
+                sendFile("sendThread", c)
             elif choice == "3":
-                ReceiveFile("receiveThread", c)
+                receiveFile("receiveThread", c, addr)
             elif choice == "4":
                 ocrFile("ocrThread", c)
             elif choice == "5":
                 ocrAllFiles("ocrAllThread", c)
             elif choice == "6":
-                convertFile("convertThread", c)
+                convertFile(addr, "convertThread", c)
             elif choice == "7":
                 convertAllFiles("convertAllThread", c)
             elif choice == "8":
@@ -86,7 +89,7 @@ def ManageConnection(name, c, addr):
 
 def main():
     host = '192.168.98.157'
-    port = 5051
+    port = 5050
 
     s = socket.socket()
     s.bind((host, port))
