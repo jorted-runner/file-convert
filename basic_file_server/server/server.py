@@ -2,7 +2,7 @@ import socket
 import threading
 import os
 
-def RetrFile(name, socket):
+def SendFile(name, socket):
     filename = socket.recv(1024).decode('utf-8')
     if os.path.isfile(filename):
         response = "EXISTS " + str(os.path.getsize(filename))
@@ -22,6 +22,19 @@ def RetrFile(name, socket):
 
     socket.close()
 
+# def ReceiveFile(name, socket):
+#     filename = socket.recv(1024).
+#     with open("new_" + filename, 'wb') as f:
+#         data = s.recv(1024)
+#         totalReceived = len(data)
+#         f.write(data)
+#         while totalReceived < filesize:
+#             data = s.recv(1024)
+#             totalReceived += len(data)
+#             f.write(data)
+#             print(f"Percentage Downloaded: {((totalReceived / filesize) * 100):.2f}")
+#         print("Download Complete")
+
 def main():
     host = '127.0.0.1'
     port = 5056
@@ -38,7 +51,7 @@ def main():
 
         print("client connected ip: " + str(addr))
 
-        t = threading.Thread(target=RetrFile, args=("retrThread", c))
+        t = threading.Thread(target=SendFile, args=("sendThread", c))
         t.start()
 
 if __name__ == "__main__":
