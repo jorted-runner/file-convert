@@ -38,12 +38,23 @@ def downloadFile(s):
                     print("Download Complete")
         else:
             print("File does not exist")
+        s.close()
 
-    s.close()
-
-def uploadFile():
-    print("Functionality to upload a file goes here.")
-    # Example: Send a request to the server to upload a file
+def uploadFile(socket):
+    filename = input("File name: ")
+    if os.path.isfile(filename):
+        socket.send(filename.encode('utf-8'))
+        filesize = str(os.path.getsize(filename))
+        socket.send(filesize.encode('utf-8'))
+        with open(filename, 'rb') as f:
+            bytesToSend = f.read(1024)
+            while bytesToSend:
+                socket.send(bytesToSend)
+                bytesToSend = f.read(1024)
+        socket.send(b"EOF")
+    else:
+        print("File does not exist")
+    socket.close()
 
 def main():
     host = '127.0.0.1'
@@ -67,9 +78,11 @@ def main():
             if choice == 1:
                 seeAllFiles()
             elif choice == 2:
+                s.send(str(choice).encode('utf-8'))
                 downloadFile(s)
             elif choice == 3:
-                uploadFile()
+                s.send(str(choice).encode('utf-8'))
+                uploadFile(s)
             elif choice == 4:
                 print("Exiting the program.")
                 running = False

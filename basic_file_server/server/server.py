@@ -22,18 +22,29 @@ def SendFile(name, socket):
 
     socket.close()
 
-# def ReceiveFile(name, socket):
-#     filename = socket.recv(1024).
-#     with open("new_" + filename, 'wb') as f:
-#         data = s.recv(1024)
-#         totalReceived = len(data)
-#         f.write(data)
-#         while totalReceived < filesize:
-#             data = s.recv(1024)
-#             totalReceived += len(data)
-#             f.write(data)
-#             print(f"Percentage Downloaded: {((totalReceived / filesize) * 100):.2f}")
-#         print("Download Complete")
+def ReceiveFile(name, socket):
+    filename = socket.recv(1024).decode('utf-8')
+    filesize = socket.recv(1024).decode('utf-8')
+    filename = "files/" + filename
+    with open(filename, 'wb') as f:
+        totalReceived = 0
+        while totalReceived < int(filesize):
+            data = socket.recv(1024)
+            if data == b"EOF":
+                break
+            totalReceived += len(data)
+            f.write(data)
+    socket.close()
+
+def ManageConnection(name, socket, c):
+    choice = c.recv(1024).decode('utf-8')
+    if choice == "2":
+        t = threading.Thread(target=SendFile, args=("sendThread", c))
+        t.start()
+    elif choice == "3":
+        t = threading.Thread(target=ReceiveFile, args=("receiveThread", c))
+        t.start()
+    choice = None
 
 def main():
     host = '127.0.0.1'
@@ -48,10 +59,9 @@ def main():
 
     while True:
         c, addr = s.accept()
-
         print("client connected ip: " + str(addr))
 
-        t = threading.Thread(target=SendFile, args=("sendThread", c))
+        t = threading.Thread(target=ManageConnection, args=("manageThread", s, c))
         t.start()
 
 if __name__ == "__main__":
