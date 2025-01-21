@@ -1,5 +1,6 @@
 import socket
 import os
+from pathlib import Path
 
 def printMenu():
     print("1. See All Files")
@@ -42,8 +43,9 @@ def downloadFile(s):
 
 def uploadFile(socket):
     filename = input("File name: ")
+    base_filename = Path(filename).name
     if os.path.isfile(filename):
-        socket.send(filename.encode('utf-8'))
+        socket.send(base_filename.encode('utf-8'))
         filesize = str(os.path.getsize(filename))
         socket.send(filesize.encode('utf-8'))
         with open(filename, 'rb') as f:
