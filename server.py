@@ -2,6 +2,10 @@ import socket
 import threading
 import os
 
+from util import Utils
+
+util = Utils()
+
 def sendFile(name, socket):
     filename = f"server_files/{socket.recv(1024).decode('utf-8')}"
     if os.path.isfile(filename):
@@ -31,7 +35,8 @@ def receiveFile(name, socket, addr):
         totalReceived = 0
         while totalReceived < int(filesize):
             data = socket.recv(1024)
-            if data == b"EOF":
+            if b"EOF" in data:
+                f.write(data.replace(b"EOF", b""))
                 break
             totalReceived += len(data)
             f.write(data)
@@ -55,6 +60,11 @@ def ocrAllFiles(addr, name, socket):
 
 def convertFile(addr, name, socket):
     receiveFile(name, socket, addr)
+    dir = f"server_files/{str(addr[1])}"
+    files = util.fetch_all_files(dir)
+    for file in files:
+        file_name, file_extension = util.getFileDetails(file)
+        util.txt_to_pdf(dir, file_name, file_extension)
 
 def convertAllFiles(name, socket):
     print("converting files")
@@ -89,7 +99,7 @@ def ManageConnection(name, c, addr):
 
 def main():
     host = '192.168.98.157'
-    port = 5050
+    port = 5051
 
     s = socket.socket()
     s.bind((host, port))

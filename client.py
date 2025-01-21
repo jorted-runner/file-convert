@@ -88,7 +88,7 @@ def convertDir(socket):
 
 def main():
     host = '192.168.98.157'
-    port = 5050
+    port = 5051
 
     try:
         s = socket.socket()
