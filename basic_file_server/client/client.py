@@ -47,7 +47,7 @@ def uploadFile():
 
 def main():
     host = '127.0.0.1'
-    port = 5056
+    port = 5050
 
     try:
         s = socket.socket()

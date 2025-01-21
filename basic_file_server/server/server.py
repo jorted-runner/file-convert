@@ -3,7 +3,7 @@ import threading
 import os
 
 def SendFile(name, socket):
-    filename = socket.recv(1024).decode('utf-8')
+    filename = f"files/{socket.recv(1024).decode('utf-8')}"
     if os.path.isfile(filename):
         response = "EXISTS " + str(os.path.getsize(filename))
         socket.send(response.encode('utf-8'))
@@ -37,7 +37,7 @@ def SendFile(name, socket):
 
 def main():
     host = '127.0.0.1'
-    port = 5056
+    port = 5050
 
     s = socket.socket()
     s.bind((host, port))
