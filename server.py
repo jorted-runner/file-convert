@@ -64,7 +64,24 @@ def convertFile(addr, name, socket):
     files = util.fetch_all_files(dir)
     for file in files:
         file_name, file_extension = util.getFileDetails(file)
-        util.txt_to_pdf(dir, file_name, file_extension)
+        if file_extension == ".txt":
+            util.txt_to_pdf(dir, file_name, file_extension)
+        elif file_extension in ['.png', '.jpg', '.jpeg', '.bmp']:
+            util.image_to_pdf(dir, file_name, file_extension)
+            print("convert image to pdf")
+        elif file_extension == ".heic":
+            jpg_file = os.path.join(dir, file_name + ".jpg")
+            util.convert_heic_to_jpg(file, jpg_file)
+            util.image_to_pdf(file_name, ".jpg")
+        elif file_extension == ".msg":
+            print("msg to pdf")
+        elif file_extension == ".docx":
+            print("maybe")
+        elif file_extension == ".doc":
+            print("maybe")
+        else:
+            print("unable to convert file")
+
 
 def convertAllFiles(name, socket):
     print("converting files")
