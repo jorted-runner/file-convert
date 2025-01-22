@@ -1,6 +1,11 @@
 import socket
 import os
+import json
 from pathlib import Path
+
+from util import Utils
+
+util = Utils()
 
 def printMenu():
     print("\n---------------------------------------\n")
@@ -52,25 +57,39 @@ def downloadFile(socket):
 
 def sendFile(filename, socket):
     base_filename = Path(filename).name
-    if os.path.isfile(filename):
-        socket.send(base_filename.encode('utf-8'))
-        filesize = str(os.path.getsize(filename))
-        socket.send(filesize.encode('utf-8'))
-        with open(filename, 'rb') as f:
+    metadata = {"filesize": os.path.getsize(filename), "filename": base_filename}
+    socket.send(json.dumps(metadata).encode('utf-8'))
+    with open(filename, 'rb') as f:
+        bytesToSend = f.read(1024)
+        while bytesToSend:
+            socket.send(bytesToSend)
             bytesToSend = f.read(1024)
-            while bytesToSend:
-                socket.send(bytesToSend)
-                bytesToSend = f.read(1024)
-        socket.send(b"EOF")
-    else:
-        print("File does not exist")
+    socket.send(b"EOF")
+    print("File sent to server")
 
 def uploadFile(socket):
     filepath = input("File name: ")
     sendFile(filepath, socket)
 
 def receiveFile(filepath, socket):
-    print("receive file")    
+    print("Receiving File")
+    path = os.path.dirname(filepath)
+    metadata = json.loads(socket.recv(1024).decode('utf-8'))
+    filesize = int(metadata['filesize'])
+    filename = metadata['filename']
+    filename = os.path.join(path, filename)
+    
+    with open(filename, 'wb') as f:
+        totalReceived = 0
+        while totalReceived < filesize:
+            data = socket.recv(1024)
+            if b"EOF" in data:  # Stop receiving when EOF is found
+                f.write(data.replace(b"EOF", b""))
+                break
+            totalReceived += len(data)
+            f.write(data)
+            print(f"Percentage Downloaded: {((totalReceived / filesize) * 100):.2f}")
+    print("Download Complete")  
 
 def ocrFile(socket):
     print("ocr file functionality")
@@ -78,11 +97,16 @@ def ocrFile(socket):
 def ocrDir(socket):
     print("ocr dir functionality")
 
+def convertProcess(socket, file):
+    if util.file_exists(file):
+        sendFile(file, socket)
+        receiveFile(file, socket)
+    else:
+        print("File does not exist")
+
 def convertFile(socket):
     fileToConvert = input("Path to file to convert: ")
-    sendFile(fileToConvert, socket)
-    receiveFile(fileToConvert, socket)
-
+    
 def convertDir(socket):
     print("convert dir functionality")
 

@@ -1,6 +1,7 @@
 import socket
 import threading
 import os
+import json
 
 from util import Utils
 
@@ -14,19 +15,28 @@ def sendFile(name, socket):
         userResponse = socket.recv(1024)
         userResponse = userResponse.decode("utf-8")
         if userResponse[:2] == 'OK':
-            with open(filename, 'rb') as f:
-                bytesToSend = f.read(1024)
-                socket.send(bytesToSend)
-                while bytesToSend != "":
-                    bytesToSend = f.read(1024)
-                    socket.send(bytesToSend)
+            send_file(filename, socket)
     else:
         response = "ERR"
         socket.send(response.encode("utf-8"))
 
+def send_file(file, filename, file_extension, socket):
+    print(f"Sending {filename}")
+    new_name = f"{filename}{file_extension}"
+    metadata = {"filesize": os.path.getsize(file), "filename": new_name}
+    socket.send(json.dumps(metadata).encode('utf-8'))
+    with open(file, 'rb') as f:
+        bytesToSend = f.read(1024)
+        while bytesToSend:
+            socket.send(bytesToSend)
+            bytesToSend = f.read(1024)
+    socket.send(b"EOF")  # Send EOF once file transmission is complete
+    print(f"{filename} sent")
+
 def receiveFile(name, socket, addr):
-    filename = socket.recv(1024).decode('utf-8')
-    filesize = socket.recv(1024).decode('utf-8')
+    metadata = json.loads(socket.recv(1024).decode('utf-8'))
+    filesize = int(metadata['filesize'])
+    filename = metadata['filename']
     port = addr[1]
     dirname = "server_files/" + str(port)
     os.mkdir(dirname)
@@ -63,12 +73,12 @@ def convertFile(addr, name, socket):
     dir = f"server_files/{str(addr[1])}"
     files = util.fetch_all_files(dir)
     for file in files:
-        file_name, file_extension = util.getFileDetails(file)
+        file_name, file_extension = util.get_file_details(file)
+        file_extension = file_extension.lower()
         if file_extension == ".txt":
             util.txt_to_pdf(dir, file_name, file_extension)
         elif file_extension in ['.png', '.jpg', '.jpeg', '.bmp']:
             util.image_to_pdf(dir, file_name, file_extension)
-            print("convert image to pdf")
         elif file_extension == ".heic":
             jpg_file = os.path.join(dir, file_name + ".jpg")
             util.convert_heic_to_jpg(file, jpg_file)
@@ -81,6 +91,13 @@ def convertFile(addr, name, socket):
             print("maybe")
         else:
             print("unable to convert file")
+        os.remove(file)
+    files = util.fetch_all_pdf_files(dir)
+    for file in files:
+        file_name, file_extension = util.get_file_details(file)
+        send_file(file, file_name, file_extension, socket)
+        os.remove(file)
+    os.rmdir(dir)
 
 
 def convertAllFiles(name, socket):

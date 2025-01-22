@@ -5,22 +5,24 @@ import os
 import pillow_heif
 
 class Utils:
+
+    def file_exists(self, file):
+        return os.path.isfile(file)
    
-    def fetch_all_files(self, folder_save_point):
+    def fetch_all_files(self, folder):
         target_files = []
-        for path, subdirs, files in os.walk(folder_save_point):
-            for name in files:
-                target_files.append(os.path.join(path, name))
+        for file_name in os.listdir(folder):
+            target_files.append(os.path.join(folder, file_name))
         return target_files
     
-    def fetch_all_pdf_files(folder):
+    def fetch_all_pdf_files(self, folder):
         target_files = []
         for file_name in os.listdir(folder):
             if file_name.lower().endswith('.pdf') and os.path.isfile(os.path.join(folder, file_name)):
                 target_files.append(os.path.join(folder, file_name))
         return target_files
 
-    def getFileDetails(self, file_path):
+    def get_file_details(self, file_path):
         file_name_with_ext = os.path.basename(file_path)
         file_name, file_extension = os.path.splitext(file_name_with_ext)
         return file_name, file_extension
@@ -30,18 +32,36 @@ class Utils:
         converted = os.path.join(path, file_name + ".pdf")
         pdf = PDF(file_name)  
         pdf.add_page()
-        pdf.set_font("Arial", size = 10)
-        f = open(og_path, "r", encoding='latin-1')
+        pdf.add_font('FreeSerif', '', 'fonts/FreeSerif.ttf', uni=True)
+        pdf.set_font("FreeSerif", size = 10)
+        f = open(og_path, "r", encoding='utf-8')
         for x in f:
             pdf.multi_cell(w=0, h=5, txt = x, align = 'L')
         pdf.output(converted)
     
-    def image_to_pdf(dir, file_name, file_extension):
+    def image_to_pdf(self, dir, file_name, file_extension):
         og_path = os.path.join(dir, file_name + file_extension)
         converted = os.path.join(dir, file_name + ".pdf")
-        image = Image.open(og_path)
-        image.save(converted, "PDF", resolution=100.0)
-        image.close()
+
+        with Image.open(og_path) as img:
+            img_width, img_height = img.size
+        
+        img_width_pts = img_width * 72 / 300
+        img_height_pts = img_height * 72 / 300
+
+        # Standard letter size in points (8.5x11 inches)
+        page_width = 8.5 * 72
+        page_height = 11 * 72
+
+        # Calculate the centered position
+        x_offset = (page_width - img_width_pts) / 2
+        y_offset = (page_height - img_height_pts) / 2
+
+        # Create a PDF and add the centered image
+        pdf = FPDF(unit="pt", format=[page_width, page_height])
+        pdf.add_page()
+        pdf.image(og_path, x=x_offset, y=y_offset, w=img_width_pts, h=img_height_pts)
+        pdf.output(converted)
     
     def convert_heic_to_jpg(self, heic_file, jpg_file):
         heif_file = pillow_heif.read_heif(heic_file)
