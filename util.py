@@ -8,6 +8,9 @@ class Utils:
 
     def file_exists(self, file):
         return os.path.isfile(file)
+    
+    def dir_exists(self, dir):
+        return os.path.isdir(dir)
    
     def fetch_all_files(self, folder):
         target_files = []

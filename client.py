@@ -56,40 +56,44 @@ def downloadFile(socket):
         print("File does not exist")
 
 def sendFile(filename, socket):
-    base_filename = Path(filename).name
-    metadata = {"filesize": os.path.getsize(filename), "filename": base_filename}
-    socket.send(json.dumps(metadata).encode('utf-8'))
-    with open(filename, 'rb') as f:
-        bytesToSend = f.read(1024)
-        while bytesToSend:
-            socket.send(bytesToSend)
-            bytesToSend = f.read(1024)
-    socket.send(b"EOF")
-    print("File sent to server")
+    try:
+        base_filename = Path(filename).name
+        metadata = {"filesize": os.path.getsize(filename), "filename": base_filename}
+        socket.send(json.dumps(metadata).encode('utf-8'))
+
+        with open(filename, 'rb') as f:
+            while chunk := f.read(1024):
+                socket.send(chunk)
+
+    except BrokenPipeError:
+        print("Error: Broken pipe during file transfer")
+    except Exception as e:
+        print(f"Unexpected error during file transfer: {e}")
 
 def uploadFile(socket):
     filepath = input("File name: ")
     sendFile(filepath, socket)
 
-def receiveFile(filepath, socket):
-    print("Receiving File")
-    path = os.path.dirname(filepath)
-    metadata = json.loads(socket.recv(1024).decode('utf-8'))
-    filesize = int(metadata['filesize'])
+def receiveFile(socket, metadata):
+    # Step 1: Receive metadata
+    filesize = metadata['filesize']
     filename = metadata['filename']
-    filename = os.path.join(path, filename)
-    
+    # Step 2: Notify server of readiness
+    socket.send(b"READY")
+
+    # Step 3: Receive file data
     with open(filename, 'wb') as f:
+        print("starting step 3")
         totalReceived = 0
         while totalReceived < filesize:
             data = socket.recv(1024)
-            if b"EOF" in data:  # Stop receiving when EOF is found
-                f.write(data.replace(b"EOF", b""))
+            if b"EOF" in data:
+                f.write(data.replace(b"EOF", b""))  # Remove EOF marker
                 break
             totalReceived += len(data)
             f.write(data)
-            print(f"Percentage Downloaded: {((totalReceived / filesize) * 100):.2f}")
-    print("Download Complete")  
+            print(f"Received {totalReceived}/{filesize} bytes ({(totalReceived / filesize) * 100:.2f}%)")
+    print(f"File {filename} received successfully")
 
 def ocrFile(socket):
     print("ocr file functionality")
@@ -100,19 +104,56 @@ def ocrDir(socket):
 def convertProcess(socket, file):
     if util.file_exists(file):
         sendFile(file, socket)
-        receiveFile(file, socket)
+        receiveFile(socket)
     else:
         print("File does not exist")
 
 def convertFile(socket):
     fileToConvert = input("Path to file to convert: ")
-    
+    convertProcess(socket, fileToConvert)
+
 def convertDir(socket):
-    print("convert dir functionality")
+    dirToConvert = input("Path to directory: ")
+    if util.dir_exists(dirToConvert):
+        # Step 1: Send metadata to the server
+        files = util.fetch_all_files(dirToConvert)
+        metadata = {"numFiles": len(files)}
+        socket.send(json.dumps(metadata).encode('utf-8'))
+
+        # Step 2: Send files to the server
+        for file in files:
+            if util.file_exists(file):
+                sendFile(file, socket)  # Custom function to send files
+                ack = socket.recv(1024).decode('utf-8')  # Wait for server acknowledgment
+                if ack == "ACK":
+                    print(f"Server acknowledged receipt of {file}")
+                else:
+                    print(f"Server failed to acknowledge receipt of {file}")
+        
+        # Step 3: Receive converted files back from the server
+        num_received = 0
+        while True:
+            try:
+                # Receive metadata for the file
+                metadata = json.loads(socket.recv(1024).decode('utf-8'))
+                filesize = metadata['filesize']
+                filename = metadata['filename']
+                print(f"Receiving {filename} ({filesize} bytes)...")
+
+                # Receive the actual file
+                receiveFile(socket, metadata)  # Custom function to receive files
+                num_received += 1
+                socket.send(b"ACK")  # Send acknowledgment to server
+                print(f"Received {filename} from server")
+            except json.JSONDecodeError:
+                print("All files received")
+                break
+    else:
+        print("Directory does not exist, try again.")
 
 def main():
     host = '192.168.98.157'
-    port = 5051
+    port = 5050
 
     try:
         s = socket.socket()
