@@ -74,16 +74,16 @@ def uploadFile(socket):
     filepath = input("File name: ")
     sendFile(filepath, socket)
 
-def receiveFile(socket, metadata):
-    # Step 1: Receive metadata
+def receiveFile(socket, metadata, dir):
     filesize = metadata['filesize']
     filename = metadata['filename']
+    filename = os.path.join(dir, filename)
+
     # Step 2: Notify server of readiness
     socket.send(b"READY")
 
     # Step 3: Receive file data
     with open(filename, 'wb') as f:
-        print("starting step 3")
         totalReceived = 0
         while totalReceived < filesize:
             data = socket.recv(1024)
@@ -101,16 +101,15 @@ def ocrFile(socket):
 def ocrDir(socket):
     print("ocr dir functionality")
 
-def convertProcess(socket, file):
-    if util.file_exists(file):
-        sendFile(file, socket)
-        receiveFile(socket)
-    else:
-        print("File does not exist")
-
 def convertFile(socket):
     fileToConvert = input("Path to file to convert: ")
-    convertProcess(socket, fileToConvert)
+    if util.file_exists(fileToConvert):
+        sendFile(fileToConvert, socket)
+        metadata = json.loads(socket.recv(1024).decode('utf-8'))
+        dir = os.path.dirname(fileToConvert)
+        receiveFile(socket, metadata, dir)
+    else:
+        print("File does not exist")
 
 def convertDir(socket):
     dirToConvert = input("Path to directory: ")
@@ -141,7 +140,7 @@ def convertDir(socket):
                 print(f"Receiving {filename} ({filesize} bytes)...")
 
                 # Receive the actual file
-                receiveFile(socket, metadata)  # Custom function to receive files
+                receiveFile(socket, metadata, dirToConvert)  # Custom function to receive files
                 num_received += 1
                 socket.send(b"ACK")  # Send acknowledgment to server
                 print(f"Received {filename} from server")
