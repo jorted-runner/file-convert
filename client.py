@@ -79,10 +79,8 @@ def receiveFile(socket, metadata, dir):
     filename = metadata['filename']
     filename = os.path.join(dir, filename)
 
-    # Step 2: Notify server of readiness
     socket.send(b"READY")
 
-    # Step 3: Receive file data
     with open(filename, 'wb') as f:
         totalReceived = 0
         while totalReceived < filesize:
@@ -92,7 +90,7 @@ def receiveFile(socket, metadata, dir):
                 break
             totalReceived += len(data)
             f.write(data)
-            print(f"Received {totalReceived}/{filesize} bytes ({(totalReceived / filesize) * 100:.2f}%)")
+            # print(f"Received {totalReceived}/{filesize} bytes ({(totalReceived / filesize) * 100:.2f}%)")
     print(f"File {filename} received successfully")
 
 def ocrFile(socket):
@@ -114,7 +112,6 @@ def convertFile(socket):
 def convertDir(socket):
     dirToConvert = input("Path to directory: ")
     if util.dir_exists(dirToConvert):
-        # Step 1: Send metadata to the server
         files = util.fetch_all_files(dirToConvert)
         metadata = {"numFiles": len(files)}
         socket.send(json.dumps(metadata).encode('utf-8'))
@@ -132,6 +129,8 @@ def convertDir(socket):
         # Step 3: Receive converted files back from the server
         num_received = 0
         while True:
+            ########### Issue seems to be here ################
+            # worked for one file but then failed on the next
             try:
                 # Receive metadata for the file
                 metadata = json.loads(socket.recv(1024).decode('utf-8'))
