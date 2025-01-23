@@ -12,11 +12,9 @@ def printMenu():
     print("1. See All Files")
     print("2. Download File")
     print("3. Upload File")
-    print("4. O.C.R. File")
-    print("5. O.C.R. Files in Directory")
-    print("6. Convert File to PDF")
-    print("7. Convert Files in Directory to PDF")
-    print("8. Exit")
+    print("4. Convert File to PDF")
+    print("5. Convert Files in Directory to PDF")
+    print("6. Exit")
 
 def seeAllFiles(socket):
     files = socket.recv(1024).decode('utf-8')
@@ -172,17 +170,11 @@ def main():
                 uploadFile(s)
             elif choice == 4:
                 s.send(str(choice).encode('utf-8'))
-                ocrFile(s)
+                convertFile(s)
             elif choice == 5:
                 s.send(str(choice).encode('utf-8'))
-                ocrDir(s)
-            elif choice == 6:
-                s.send(str(choice).encode('utf-8'))
-                convertFile(s)
-            elif choice == 7:
-                s.send(str(choice).encode('utf-8'))
                 convertDir(s)
-            elif choice == 8:
+            elif choice == 6:
                 s.send(str(choice).encode('utf-8'))
                 print("Exiting the program.")
                 running = False

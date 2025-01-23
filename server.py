@@ -75,12 +75,6 @@ def sendListFiles(name, socket):
     file_list = "\n".join(files)
     socket.send(file_list.encode('utf-8'))
 
-def ocrFile(name, socket):
-    print("ocr file")
-
-def ocrAllFiles(addr, name, socket):
-    print("ocr all files")
-
 def convertProcess(dir, file):
     file_name, file_extension = util.get_file_details(file)
     file_extension = file_extension.lower()
@@ -171,14 +165,10 @@ def ManageConnection(name, c, addr):
             elif choice == "3":
                 receiveFile("receiveThread", c, addr)
             elif choice == "4":
-                ocrFile("ocrThread", c)
-            elif choice == "5":
-                ocrAllFiles("ocrAllThread", c)
-            elif choice == "6":
                 convertFile(addr, "convertThread", c)
-            elif choice == "7":
+            elif choice == "5":
                 convertAllFiles("convertAllThread", c, addr)
-            elif choice == "8":
+            elif choice == "6":
                 print("Client Disconnected")
                 break
         except Exception as e:
