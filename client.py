@@ -151,7 +151,7 @@ def convertDir(socket):
         print("Directory does not exist, try again.")
 
 def main():
-    host = '192.168.98.157'
+    host = '127.0.0.1'
     port = 5050
 
     try:

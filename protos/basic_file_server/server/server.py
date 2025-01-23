@@ -62,7 +62,7 @@ def ManageConnection(name, c):
     c.close()
 
 def main():
-    host = '192.168.98.157'
+    host = '127.0.0.1'
     port = 5050
 
     s = socket.socket()
