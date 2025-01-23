@@ -79,8 +79,6 @@ def receiveFile(socket, metadata, dir):
     filename = metadata['filename']
     filename = os.path.join(dir, filename)
 
-    socket.send(b"READY")
-
     with open(filename, 'wb') as f:
         totalReceived = 0
         while totalReceived < filesize:
@@ -91,6 +89,7 @@ def receiveFile(socket, metadata, dir):
             totalReceived += len(data)
             f.write(data)
             # print(f"Received {totalReceived}/{filesize} bytes ({(totalReceived / filesize) * 100:.2f}%)")
+    socket.send(b"ACK")
     print(f"File {filename} received successfully")
 
 def ocrFile(socket):
@@ -128,26 +127,20 @@ def convertDir(socket):
         
         # Step 3: Receive converted files back from the server
         num_received = 0
-        while True:
-            ########### Issue seems to be here ################
-            # worked for one file but then failed on the next
-            try:
-                # Receive metadata for the file
-                metadata = json.loads(socket.recv(1024).decode('utf-8'))
-                filesize = metadata['filesize']
-                filename = metadata['filename']
-                print(f"Receiving {filename} ({filesize} bytes)...")
 
-                # Receive the actual file
-                receiveFile(socket, metadata, dirToConvert)  # Custom function to receive files
-                num_received += 1
-                socket.send(b"ACK")  # Send acknowledgment to server
-                print(f"Received {filename} from server")
-            except json.JSONDecodeError:
-                print("All files received")
-                break
-    else:
-        print("Directory does not exist, try again.")
+        metadata = json.loads(socket.recv(1024).decode('utf-8'))
+        num_files = metadata['numFiles']
+
+        # Step 2: Receive files from the server
+        ##### this needs to be aligned with the process on the server
+        while num_received < num_files:
+            socket.send(b"READY")
+            metadata = json.loads(socket.recv(1024).decode('utf-8'))
+            print("Receiving file...")
+            receiveFile(socket, metadata, dirToConvert)
+            num_received += 1
+            socket.send(b"ACK")  # Send acknowledgment for each file received
+            print(f"Received {num_received}/{num_files} files")
 
 def main():
     host = '127.0.0.1'

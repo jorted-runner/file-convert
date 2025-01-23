@@ -22,16 +22,14 @@ def sendFile(name, socket):
 
 def send_file(file, file_name, file_extension, socket):
     print(f"Sending {file}")
-
-    # Step 1: Send metadata
-    metadata = {"filesize": os.path.getsize(file), "filename": file_name + file_extension}
-    socket.send(json.dumps(metadata).encode('utf-8'))
-
     # Step 2: Wait for client readiness
     ack = socket.recv(1024).decode('utf-8')
     if ack != "READY":
         print(f"Client not ready for {file}")
-        return
+        return    # Step 1: Send metadata
+    
+    metadata = {"filesize": os.path.getsize(file), "filename": file_name + file_extension}
+    socket.send(json.dumps(metadata).encode('utf-8'))
 
     # Step 3: Send file data
     try:
@@ -145,6 +143,9 @@ def convertAllFiles(name, socket, addr):
 
         # Step 4: Fetch and send back converted files
         converted_files = util.fetch_all_pdf_files(dir)
+        metadata = {"numFiles": len(converted_files)}
+        socket.send(json.dumps(metadata).encode('utf-8'))
+        
         for file in converted_files:
             file_name, file_extension = util.get_file_details(file)
             send_file(file, file_name, file_extension, socket)  # Custom function to send files
