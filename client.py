@@ -75,7 +75,7 @@ def convertFile(socket):
             metadata = json.loads(socket.recv(metadata_length).decode('utf-8'))
 
             # Receive the actual file
-            dir = "/Volumes/Samsung_T3/App Brewery Massive Bundle/Image Assets/photos"
+            dir = os.path.dirname(fileToConvert)
             util.receiveFile(socket, dir)
             num_received += 1
             socket.send(b"ACK")  # Acknowledge the server
@@ -121,7 +121,7 @@ def convertDir(socket):
 
 def main():
     host = '127.0.0.1'
-    port = 5051
+    port = 5050
 
     try:
         s = socket.socket()

@@ -17,7 +17,9 @@ class Utils:
     def fetch_all_files(self, folder):
         target_files = []
         for file_name in os.listdir(folder):
-            target_files.append(os.path.join(folder, file_name))
+            full_path = os.path.join(folder, file_name)
+            if not self.dir_exists(full_path):
+                target_files.append(full_path)
         return target_files
     
     def fetch_all_pdf_files(self, folder):

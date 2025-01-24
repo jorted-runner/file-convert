@@ -8,6 +8,7 @@ from util import Utils
 
 util = Utils()
 
+# Function handles the process of sending a file to the client
 def sendServerFile(name, socket):
     # Receive metadata length and metadata only
     metadata_length = socket.recv(4)  # Fixed-length header for metadata size
@@ -27,13 +28,15 @@ def sendServerFile(name, socket):
         response = b"ERR"
         socket.send(response)
 
+# Function handles sending a list of files available on the server
 def sendListFiles(name, socket):
     directory_path = "server_files"
     files = util.fetch_all_files(directory_path)      
     file_list = "\n".join(files)
     socket.send(file_list.encode('utf-8'))
 
-def convertProcess(dir, file):
+# Function to process each file that needs conversion.
+def conversionBrain(dir, file):
     file_name, file_extension = util.get_file_details(file)
     file_extension = file_extension.lower()
     if file_extension == ".txt":
@@ -43,32 +46,37 @@ def convertProcess(dir, file):
         util.image_to_pdf(dir, file_name, file_extension)
         os.remove(file)
     elif file_extension == ".heic":
-        jpg_file = os.path.join(dir, file_name + ".jpg")
-        util.convert_heic_to_jpg(file, jpg_file)
+        jpg_file_name = os.path.join(dir, file_name + ".jpg")
+        util.convert_heic_to_jpg(file, jpg_file_name)
         util.image_to_pdf(file_name, ".jpg")
         os.remove(file)
+        os.remove(jpg_file_name)
     elif file_extension == ".msg":
-        print("msg to pdf")
-        os.remove(file)
+        print("To be implemented")
     elif file_extension == ".docx":
-        print("maybe")
-        os.remove(file)
+        print("To be implemented")
     elif file_extension == ".doc":
-        print("maybe")
-        os.remove(file)    
+        print("To be implemented")
 
+#process to convert a single file
 def convertFile(addr, name, socket):
     dir = f"server_files/{str(addr[1])}"
-    util.receiveFile(name, socket, dir)
-    files = util.fetch_all_files(dir)
-    for file in files:
-        convertProcess(dir, file)
-    files = util.fetch_all_pdf_files(dir)
-    for file in files:
-        util.sendFile(file, socket)
-        os.remove(file)
-    os.rmdir(dir)
 
+    # Step 1: Receive File from Client
+    util.receiveFile(name, socket, dir)
+    file = os.path.join(dir, os.listdir(dir)[0])
+
+    # Step 2: Convert File
+    conversionBrain(dir, file)
+
+    # Step 3: Send File to Client
+    util.sendFile(file, socket)
+
+    # Step 4: Remove dir and file from server
+    shutil.rmtree(dir)
+
+
+#process to convert a full directory of files
 def convertAllFiles(name, socket, addr):
     # Step 1: Receive metadata
     metadata = json.loads(socket.recv(1024).decode('utf-8'))
@@ -78,10 +86,9 @@ def convertAllFiles(name, socket, addr):
     # Step 2: Receive files from the client
     while num_received < num_files:
         dir = f"server_files/{str(addr[1])}"
-        util.receiveFile(socket, dir)  # Custom function to receive files
+        util.receiveFile(socket, dir)
         num_received += 1
         socket.send(b"ACK")  # Send acknowledgment for each file received
-    print(f"Received {num_received}/{num_files} files")
 
     # Step 3: Convert received files
     if num_received == num_files:
@@ -90,10 +97,12 @@ def convertAllFiles(name, socket, addr):
 
         # Process and convert each file
         for file in files:
-            convertProcess(dir, file)  # Custom function to handle conversion
+            conversionBrain(dir, file)  # Custom function to handle conversion
 
         # Step 4: Fetch and send back converted files
         converted_files = util.fetch_all_pdf_files(dir)
+
+        # send number of files back to the client
         metadata = {"numFiles": len(converted_files)}
         socket.send(json.dumps(metadata).encode('utf-8'))
         
@@ -115,9 +124,11 @@ def convertAllFiles(name, socket, addr):
                     os.remove(file)
                 else:
                     print(f"Client failed to acknowledge receipt of {file}")
-        shutil.rmtree(dir)  # Clean up server directory
+        # Step 5: Remove dir and files from server
+        shutil.rmtree(dir)
 
-def ManageConnection(name, c, addr):
+# Function to manage each connections choices. Allowing user to submit multiple requests without having to reconnect to the server
+def connectionBrain(name, c, addr):
     while True:
         try:
             choice = c.recv(1024).decode('utf-8')
@@ -142,7 +153,7 @@ def ManageConnection(name, c, addr):
 
 def main():
     host = '127.0.0.1'
-    port = 5051
+    port = 5050
 
     s = socket.socket()
     s.bind((host, port))
@@ -155,7 +166,8 @@ def main():
         c, addr = s.accept()
         print("client connected ip: " + str(addr))
 
-        t = threading.Thread(target=ManageConnection, args=("manageThread", c, addr))
+        # start new thread for each connection
+        t = threading.Thread(target=connectionBrain, args=("manageThread", c, addr))
         t.start()
 
 if __name__ == "__main__":
