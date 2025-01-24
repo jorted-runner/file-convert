@@ -1,8 +1,0 @@
-python -m venv venv
-
-# Run the following on OSX & Linux:
-source venv/bin/activate
-# Run the following on Windows:
-.\\venv\\Scripts\\activate
-
-pip install -r requirements.txt
