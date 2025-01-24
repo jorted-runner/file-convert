@@ -28,7 +28,6 @@ def sendServerFile(name, socket):
         socket.send(response)
 
 def sendListFiles(name, socket):
-    # Walk through the directory and list files
     directory_path = "server_files"
     files = util.fetch_all_files(directory_path)      
     file_list = "\n".join(files)
@@ -66,7 +65,6 @@ def convertFile(addr, name, socket):
         convertProcess(dir, file)
     files = util.fetch_all_pdf_files(dir)
     for file in files:
-        file_name, file_extension = util.get_file_details(file)
         util.sendFile(file, socket)
         os.remove(file)
     os.rmdir(dir)
@@ -130,11 +128,9 @@ def ManageConnection(name, c, addr):
             elif choice == "2":
                 sendServerFile("sendThread", c)
             elif choice == "3":
-                dir = f"server_files/{str(addr[1])}"
-                util.receiveFile("receiveThread", c, dir)
-            elif choice == "4":
-                convertFile(addr, "convertThread", c)
-            elif choice == "5":
+                dir = "server_files"
+                util.receiveFile(c, dir)
+            elif choice == "4" or choice == "5":
                 convertAllFiles("convertAllThread", c, addr)
             elif choice == "6":
                 print("Client Disconnected")

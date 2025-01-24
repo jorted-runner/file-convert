@@ -16,7 +16,6 @@ def printMenu():
     print("5. Convert Files in Directory to PDF")
     print("6. Exit")
 
-# Needs to be reworked
 def seeAllFiles(socket):
     files = socket.recv(1024).decode('utf-8')
     file_list = files.split('\n')
@@ -26,38 +25,61 @@ def seeAllFiles(socket):
             file = file.replace("server_files/", "")
             print(f"- {file}")
 
-# Needs to be reworked
 def downloadFile(socket):
     filename = input("File name: ")
+
+    #send filename to server
     metadata = json.dumps({"filename": filename})
     metadata_length = len(metadata).to_bytes(4, byteorder="big")
     socket.send(metadata_length)
     socket.send(metadata.encode('utf-8'))
+
     exists = socket.recv(1024).decode('utf-8')
     if exists == "EXISTS":
         path = input("Desired Directory Path: ")
-        
         util.receiveFile(socket, path)
     else:
         print(filename + " does not exists. Try again")
 
 def uploadFile(socket):
-    filepath = input("File name: ")
-    util.sendFile(filepath, socket)
-
-def ocrFile(socket):
-    print("ocr file functionality")
-
-def ocrDir(socket):
-    print("ocr dir functionality")
+    filepath = input("File Path: ")
+    if util.file_exists(filepath):
+        util.sendFile(filepath, socket)
+    else:
+        print("File does not exist.")
 
 def convertFile(socket):
     fileToConvert = input("Path to file to convert: ")
     if util.file_exists(fileToConvert):
-        util.sendFile(fileToConvert, socket)
+        metadata = {"numFiles": 1}
+        socket.send(json.dumps(metadata).encode('utf-8'))
+
+        util.sendFile(fileToConvert, socket)  # Custom function to send files
+        ack = socket.recv(1024).decode('utf-8')  # Wait for server acknowledgment
+        if ack == "ACK":
+            print(f"Server acknowledged receipt of {fileToConvert}")
+        else:
+            print(f"Server failed to acknowledge receipt of {fileToConvert}")
+
+        # Step 3: Receive converted file back from the server
+        num_received = 0
+
         metadata = json.loads(socket.recv(1024).decode('utf-8'))
-        dir = os.path.dirname(fileToConvert)
-        util.receiveFile(socket, metadata, dir)
+        num_files = metadata['numFiles']
+
+        # Step 2: Receive files from the server
+        while num_received < num_files:
+            # Read metadata length
+            metadata_length = int.from_bytes(socket.recv(4), byteorder='big')
+            # Read metadata
+            metadata = json.loads(socket.recv(metadata_length).decode('utf-8'))
+
+            # Receive the actual file
+            dir = "/Volumes/Samsung_T3/App Brewery Massive Bundle/Image Assets/photos"
+            util.receiveFile(socket, dir)
+            num_received += 1
+            socket.send(b"ACK")  # Acknowledge the server
+            print(f"Received {num_received}/{num_files} files")
     else:
         print("File does not exist")
 
@@ -85,7 +107,6 @@ def convertDir(socket):
         num_files = metadata['numFiles']
 
         # Step 2: Receive files from the server
-        ##### this needs to be aligned with the process on the server
         while num_received < num_files:
             # Read metadata length
             metadata_length = int.from_bytes(socket.recv(4), byteorder='big')

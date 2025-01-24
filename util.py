@@ -37,7 +37,7 @@ class Utils:
         converted = os.path.join(path, file_name + ".pdf")
         pdf = PDF(file_name)  
         pdf.add_page()
-        pdf.add_font('FreeSerif', '', 'fonts/FreeSerif.ttf', uni=True)
+        pdf.add_font('FreeSerif', '', os.path.join('fonts', 'FreeSerif.ttf'), uni=True)
         pdf.set_font("FreeSerif", size = 10)
         f = open(og_path, "r", encoding='utf-8')
         for x in f:
