@@ -12,7 +12,7 @@ The program allows the user to:
 
 To run this software, you need to start both the server and client programs, which will establish a connection for communication and file transfer.
 
-[Software Demo Video](http://youtube.link.goes.here)---
+[Software Demo Video](http://youtube.link.goes.here)
 
 ## Network Communication
 
