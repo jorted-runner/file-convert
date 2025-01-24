@@ -2,7 +2,9 @@ from fpdf import FPDF
 from PIL import Image
 
 import os
+import json
 import pillow_heif
+from pathlib import Path
 
 class Utils:
 
@@ -75,6 +77,52 @@ class Utils:
             "raw",
         )
         image.save(jpg_file, format("jpeg"))
+
+    def sendFile(self, filename, conn):
+        try:
+            # file metadata
+            base_filename = Path(filename).name
+            metadata = json.dumps({"filesize": os.path.getsize(filename), "filename": base_filename})
+            metadata_length = len(metadata).to_bytes(4, byteorder="big")
+
+            # Send metadata length and metadata
+            conn.send(metadata_length)
+            conn.send(metadata.encode('utf-8'))
+
+            # Send file content
+            with open(filename, 'rb') as f:
+                while chunk := f.read(1024):
+                    conn.send(chunk)
+            print(f"File sent: {filename}")
+        except Exception as e:
+            print(f"Error in sendFile: {e}")
+
+    def receiveFile(self, conn, save_dir):
+        try:
+            # Receive metadata length and metadata only
+            metadata_length = conn.recv(4)  # Fixed-length header for metadata size
+            if not metadata_length:
+                raise ValueError("No metadata length received")
+            metadata_size = int.from_bytes(metadata_length, byteorder="big")
+
+            metadata = json.loads(conn.recv(metadata_size).decode('utf-8'))
+            filesize = metadata['filesize']
+            filename = metadata['filename']
+            os.makedirs(save_dir, exist_ok=True)
+            filepath = os.path.join(save_dir, filename)
+
+            # Receive file content
+            with open(filepath, 'wb') as f:
+                totalReceived = 0
+                while totalReceived < filesize:
+                    data = conn.recv(1024)
+                    if not data:
+                        break
+                    totalReceived += len(data)
+                    f.write(data)
+            print(f"File received: {filepath}")
+        except Exception as e:
+            print(f"Error in receiveFile: {e}")
 
 class PDF(FPDF):
     def __init__(self, file_name):

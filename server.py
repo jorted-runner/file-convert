@@ -2,76 +2,35 @@ import socket
 import threading
 import os
 import json
+import shutil
 
 from util import Utils
 
 util = Utils()
 
-def sendFile(name, socket):
-    filename = f"server_files/{socket.recv(1024).decode('utf-8')}"
+def sendServerFile(name, socket):
+    # Receive metadata length and metadata only
+    metadata_length = socket.recv(4)  # Fixed-length header for metadata size
+    if not metadata_length:
+        raise ValueError("No metadata length received")
+    metadata_size = int.from_bytes(metadata_length, byteorder="big")
+
+    metadata = json.loads(socket.recv(metadata_size).decode('utf-8'))
+    filename = metadata['filename']
+    filename = os.path.join("server_files", filename)
+
     if os.path.isfile(filename):
-        response = "EXISTS " + str(os.path.getsize(filename))
-        socket.send(response.encode('utf-8'))
-        userResponse = socket.recv(1024)
-        userResponse = userResponse.decode("utf-8")
-        if userResponse[:2] == 'OK':
-            send_file(filename, socket)
+        response = b"EXISTS"
+        socket.send(response)
+        util.sendFile(filename, socket)
     else:
-        response = "ERR"
-        socket.send(response.encode("utf-8"))
-
-def send_file(file, file_name, file_extension, socket):
-    print(f"Sending {file}")
-    # Step 2: Wait for client readiness
-    ack = socket.recv(1024).decode('utf-8')
-    if ack != "READY":
-        print(f"Client not ready for {file}")
-        return    # Step 1: Send metadata
-    
-    metadata = {"filesize": os.path.getsize(file), "filename": file_name + file_extension}
-    socket.send(json.dumps(metadata).encode('utf-8'))
-
-    # Step 3: Send file data
-    try:
-        with open(file, 'rb') as f:
-            while chunk := f.read(1024):
-                socket.send(chunk)
-        socket.send(b"EOF")  # Explicitly send an EOF marker to indicate end of file
-        print(f"{file} sent successfully")
-    except Exception as e:
-        print(f"Error sending file {file}: {e}")
-
-def receiveFile(name, socket, addr):
-    try:
-        metadata = json.loads(socket.recv(1024).decode('utf-8'))
-        filesize = metadata['filesize']
-        filename = metadata['filename']
-        port = addr[1]
-        dirname = f"server_files/{port}"
-        os.makedirs(dirname, exist_ok=True)
-        filepath = os.path.join(dirname, filename)
-
-        with open(filepath, 'wb') as f:
-            totalReceived = 0
-            while totalReceived < filesize:
-                data = socket.recv(1024)
-                if not data:
-                    break
-                totalReceived += len(data)
-                f.write(data)
-    except json.JSONDecodeError:
-        print("Error: Invalid JSON received for metadata")
-    except Exception as e:
-        print(f"Error handling file: {e}")
+        response = b"ERR"
+        socket.send(response)
 
 def sendListFiles(name, socket):
     # Walk through the directory and list files
     directory_path = "server_files"
-    files = []
-    for root, dirs, filenames in os.walk(directory_path):
-        for filename in filenames:
-            files.append(filename)
-            
+    files = util.fetch_all_files(directory_path)      
     file_list = "\n".join(files)
     socket.send(file_list.encode('utf-8'))
 
@@ -100,15 +59,15 @@ def convertProcess(dir, file):
         os.remove(file)    
 
 def convertFile(addr, name, socket):
-    receiveFile(name, socket, addr)
     dir = f"server_files/{str(addr[1])}"
+    util.receiveFile(name, socket, dir)
     files = util.fetch_all_files(dir)
     for file in files:
         convertProcess(dir, file)
     files = util.fetch_all_pdf_files(dir)
     for file in files:
         file_name, file_extension = util.get_file_details(file)
-        send_file(file, file_name, file_extension, socket)
+        util.sendFile(file, socket)
         os.remove(file)
     os.rmdir(dir)
 
@@ -120,8 +79,8 @@ def convertAllFiles(name, socket, addr):
 
     # Step 2: Receive files from the client
     while num_received < num_files:
-        print("Receiving file...")
-        receiveFile(name, socket, addr)  # Custom function to receive files
+        dir = f"server_files/{str(addr[1])}"
+        util.receiveFile(socket, dir)  # Custom function to receive files
         num_received += 1
         socket.send(b"ACK")  # Send acknowledgment for each file received
     print(f"Received {num_received}/{num_files} files")
@@ -141,16 +100,24 @@ def convertAllFiles(name, socket, addr):
         socket.send(json.dumps(metadata).encode('utf-8'))
         
         for file in converted_files:
-            file_name, file_extension = util.get_file_details(file)
-            send_file(file, file_name, file_extension, socket)  # Custom function to send files
-            # Wait for client acknowledgment
-            ack = socket.recv(1024).decode('utf-8')
-            if ack == "ACK":
-                print(f"Client acknowledged receipt of {file}")
-                os.remove(file)  # Remove file after successful transfer
-            else:
-                print(f"Client failed to acknowledge receipt of {file}")
-        os.rmdir(dir)  # Clean up server directory after all files are sent
+            if util.file_exists(file):
+                # Prepare metadata
+                metadata = json.dumps({"filesize": os.path.getsize(file), "filename": os.path.basename(file)})
+                metadata_length = len(metadata).to_bytes(4, byteorder='big')
+
+                # Send metadata length and metadata
+                socket.send(metadata_length)
+                socket.send(metadata.encode('utf-8'))
+
+                # Send the file
+                util.sendFile(file, socket)
+                ack = socket.recv(1024).decode('utf-8')  # Wait for acknowledgment
+                if ack == "ACK":
+                    print(f"Client acknowledged receipt of {file}")
+                    os.remove(file)
+                else:
+                    print(f"Client failed to acknowledge receipt of {file}")
+        shutil.rmtree(dir)  # Clean up server directory
 
 def ManageConnection(name, c, addr):
     while True:
@@ -161,9 +128,10 @@ def ManageConnection(name, c, addr):
             elif choice == "1":
                 sendListFiles("allFilesThread", c)
             elif choice == "2":
-                sendFile("sendThread", c)
+                sendServerFile("sendThread", c)
             elif choice == "3":
-                receiveFile("receiveThread", c, addr)
+                dir = f"server_files/{str(addr[1])}"
+                util.receiveFile("receiveThread", c, dir)
             elif choice == "4":
                 convertFile(addr, "convertThread", c)
             elif choice == "5":
@@ -178,7 +146,7 @@ def ManageConnection(name, c, addr):
 
 def main():
     host = '127.0.0.1'
-    port = 5050
+    port = 5051
 
     s = socket.socket()
     s.bind((host, port))
