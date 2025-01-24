@@ -7,6 +7,7 @@ from util import Utils
 
 util = Utils()
 
+# Display the menu options to the user
 def printMenu():
     print("\n---------------------------------------\n")
     print("1. See All Files")
@@ -16,6 +17,7 @@ def printMenu():
     print("5. Convert Files in Directory to PDF")
     print("6. Exit")
 
+# Fetch and display all available files from the server
 def seeAllFiles(socket):
     files = socket.recv(1024).decode('utf-8')
     file_list = files.split('\n')
@@ -25,8 +27,9 @@ def seeAllFiles(socket):
             file = file.replace("server_files/", "")
             print(f"- {file}")
 
+# Handle file download from the server
 def downloadFile(socket):
-    filename = input("File name: ")
+    filename = input("Enter the filename to download: ")
 
     #send filename to server
     metadata = json.dumps({"filename": filename})
