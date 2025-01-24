@@ -41,6 +41,7 @@ def downloadFile(socket):
     else:
         print(filename + " does not exists. Try again")
 
+# Upload file to server
 def uploadFile(socket):
     filepath = input("File Path: ")
     if util.file_exists(filepath):
@@ -48,27 +49,23 @@ def uploadFile(socket):
     else:
         print("File does not exist.")
 
+# Process to convert a single file
 def convertFile(socket):
     fileToConvert = input("Path to file to convert: ")
+    # Step 1: Check if user input file exists
     if util.file_exists(fileToConvert):
+        # Step 2: Tell server to expect 1 file
         metadata = {"numFiles": 1}
         socket.send(json.dumps(metadata).encode('utf-8'))
 
-        util.sendFile(fileToConvert, socket)  # Custom function to send files
+        # Step 3: Send File to Server
+        util.sendFile(fileToConvert, socket)
         ack = socket.recv(1024).decode('utf-8')  # Wait for server acknowledgment
-        if ack == "ACK":
+        if ack == "ACK": # If acknowledged proceed to receive file
             print(f"Server acknowledged receipt of {fileToConvert}")
-        else:
-            print(f"Server failed to acknowledge receipt of {fileToConvert}")
+            # not explicitly needed, but is received to keep the server side logic simple
+            metadata = json.loads(socket.recv(1024).decode('utf-8'))
 
-        # Step 3: Receive converted file back from the server
-        num_received = 0
-
-        metadata = json.loads(socket.recv(1024).decode('utf-8'))
-        num_files = metadata['numFiles']
-
-        # Step 2: Receive files from the server
-        while num_received < num_files:
             # Read metadata length
             metadata_length = int.from_bytes(socket.recv(4), byteorder='big')
             # Read metadata
@@ -77,14 +74,18 @@ def convertFile(socket):
             # Receive the actual file
             dir = os.path.dirname(fileToConvert)
             util.receiveFile(socket, dir)
-            num_received += 1
             socket.send(b"ACK")  # Acknowledge the server
-            print(f"Received {num_received}/{num_files} files")
+            print(f"Received file")
+        else:
+            print(f"Server failed to acknowledge receipt of {fileToConvert}")
+
     else:
         print("File does not exist")
 
+# Process to convert all files in a directory
 def convertDir(socket):
     dirToConvert = input("Path to directory: ")
+    # Step 1: Verify that the directory exists
     if util.dir_exists(dirToConvert):
         files = util.fetch_all_files(dirToConvert)
         metadata = {"numFiles": len(files)}

@@ -7,13 +7,15 @@ import pillow_heif
 from pathlib import Path
 
 class Utils:
-
+    # Check if a file exists. Return Bool
     def file_exists(self, file):
         return os.path.isfile(file)
     
+    # Check if a directory exists. Return Bool
     def dir_exists(self, dir):
         return os.path.isdir(dir)
    
+    # Retrieve all files from directory, and return list of files
     def fetch_all_files(self, folder):
         target_files = []
         for file_name in os.listdir(folder):
@@ -22,6 +24,7 @@ class Utils:
                 target_files.append(full_path)
         return target_files
     
+    # Retrieve all files from directory, and return list of PDF files
     def fetch_all_pdf_files(self, folder):
         target_files = []
         for file_name in os.listdir(folder):
@@ -29,11 +32,13 @@ class Utils:
                 target_files.append(os.path.join(folder, file_name))
         return target_files
 
+    # Take file path and return file name and file extension. Example: INPUT: /path/to/folder/test.txt RETURN: test, .txt
     def get_file_details(self, file_path):
         file_name_with_ext = os.path.basename(file_path)
         file_name, file_extension = os.path.splitext(file_name_with_ext)
         return file_name, file_extension
 
+    # Take txt file and convert it PDF
     def txt_to_pdf(self, path, file_name, file_extension):
         og_path = os.path.join(path, file_name + file_extension)
         converted = os.path.join(path, file_name + ".pdf")
@@ -46,6 +51,7 @@ class Utils:
             pdf.multi_cell(w=0, h=5, txt = x, align = 'L')
         pdf.output(converted)
     
+    # Convert image file to PDF
     def image_to_pdf(self, dir, file_name, file_extension):
         og_path = os.path.join(dir, file_name + file_extension)
         converted = os.path.join(dir, file_name + ".pdf")
@@ -70,6 +76,7 @@ class Utils:
         pdf.image(og_path, x=x_offset, y=y_offset, w=img_width_pts, h=img_height_pts)
         pdf.output(converted)
     
+    # Convert HEIC file to JPG
     def convert_heic_to_jpg(self, heic_file, jpg_file):
         heif_file = pillow_heif.read_heif(heic_file)
         image = Image.frombytes(
@@ -80,6 +87,7 @@ class Utils:
         )
         image.save(jpg_file, format("jpeg"))
 
+    # Used by server and client to Send File
     def sendFile(self, filename, conn):
         try:
             # file metadata
@@ -99,6 +107,7 @@ class Utils:
         except Exception as e:
             print(f"Error in sendFile: {e}")
 
+    # Used by server and client to Receive File
     def receiveFile(self, conn, save_dir):
         try:
             # Receive metadata length and metadata only
