@@ -5,8 +5,10 @@ import json
 import shutil
 
 from util import Utils
+from convert import ConvertBrain
 
 util = Utils()
+converter = ConvertBrain()
 
 # Function handles the process of sending a file to the client
 def sendServerFile(name, socket):
@@ -40,15 +42,15 @@ def conversionBrain(dir, file):
     file_name, file_extension = util.get_file_details(file)
     file_extension = file_extension.lower()
     if file_extension == ".txt":
-        util.txt_to_pdf(dir, file_name, file_extension)
+        converter.txt_to_pdf(dir, file_name, file_extension)
         os.remove(file)
     elif file_extension in ['.png', '.jpg', '.jpeg', '.bmp']:
-        util.image_to_pdf(dir, file_name, file_extension)
+        converter.image_to_pdf(dir, file_name, file_extension)
         os.remove(file)
     elif file_extension == ".heic":
         jpg_file_name = os.path.join(dir, file_name + ".jpg")
-        util.convert_heic_to_jpg(file, jpg_file_name)
-        util.image_to_pdf(file_name, ".jpg")
+        converter.convert_heic_to_jpg(file, jpg_file_name)
+        converter.image_to_pdf(file_name, ".jpg")
         os.remove(file)
         os.remove(jpg_file_name)
     elif file_extension == ".msg":
