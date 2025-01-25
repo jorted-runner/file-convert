@@ -2,7 +2,6 @@ import socket
 import os
 import json
 
-
 from util import Utils
 
 util = Utils()
