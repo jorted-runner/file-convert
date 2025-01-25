@@ -64,6 +64,10 @@ This program follows a **client-server architecture** using the **TCP protocol**
 pip install -r requirements.txt
 ```
 
+``` bash
+brew install libreoffice
+```
+
 ---
 
 ## Useful Websites

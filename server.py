@@ -56,9 +56,8 @@ def conversionBrain(dir, file):
     elif file_extension == ".msg":
         print("To be implemented")
     elif file_extension == ".docx":
-        print("To be implemented")
-    elif file_extension == ".doc":
-        print("To be implemented")
+        output_file = os.path.join(dir, file_name + '.pdf')
+        converter.convert_docx_to_pdf(file, output_file)
 
 #process to convert a single file
 def convertFile(addr, name, socket):

@@ -3,6 +3,7 @@ from fpdf import FPDF
 from PIL import Image
 
 import os
+import platform
 
 class ConvertBrain:
     # Take txt file and convert it PDF
@@ -53,6 +54,35 @@ class ConvertBrain:
             "raw",
         )
         image.save(jpg_file, format("jpeg"))
+
+    def convert_docx_to_pdf(self, input_path, output_path):
+        # Determine the operating system
+        system = platform.system()
+        
+        if system == "Darwin":  # macOS is identified as "Darwin" in platform.system()
+            import subprocess
+            try:
+                subprocess.run(
+                    ['soffice', '--headless', '--convert-to', 'pdf', input_path, '--outdir', output_path.rsplit('/', 1)[0]],
+                    check=True
+                )
+                print(f"File converted successfully: {output_path}")
+            except Exception as e:
+                print(f"Error converting file on mac: {e}")
+        elif system == "Windows":  # Windows
+            import comtypes.client
+            try:
+                word = comtypes.client.CreateObject('Word.Application')
+                word.Visible = False
+                doc = word.Documents.Open(input_path)
+                doc.SaveAs(output_path, FileFormat=17)  # FileFormat=17 is PDF
+                doc.Close()
+                word.Quit()
+                print(f"File converted successfully: {output_path}")
+            except Exception as e:
+                print(f"Error converting file on windows: {e}")
+        else:
+            print(f"Unsupported operating system: {system}")
 
 
 class PDF(FPDF):
