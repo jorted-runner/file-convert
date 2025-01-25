@@ -30,7 +30,9 @@ def seeAllFiles(socket):
 # Handle file download from the server
 def downloadFile(socket):
     filename = input("Enter the filename to download: ")
-
+    # Remove surrounding quotes or single quotes if they exist
+    if filename.startswith('"') or filename.startswith("'"):
+        filename = filename.strip('"').strip("'")
     #send filename to server
     metadata = json.dumps({"filename": filename})
     metadata_length = len(metadata).to_bytes(4, byteorder="big")
@@ -47,6 +49,9 @@ def downloadFile(socket):
 # Upload file to server
 def uploadFile(socket):
     filepath = input("File Path: ")
+    # Remove surrounding quotes or single quotes if they exist
+    if filepath.startswith('"') or filepath.startswith("'"):
+        filepath = filepath.strip('"').strip("'")
     if util.file_exists(filepath):
         util.sendFile(filepath, socket)
     else:
@@ -55,6 +60,10 @@ def uploadFile(socket):
 # Process to convert a single file
 def convertFile(socket):
     fileToConvert = input("Path to file to convert: ")
+    # Remove surrounding quotes or single quotes if they exist
+    if fileToConvert.startswith('"') or fileToConvert.startswith("'"):
+        fileToConvert = fileToConvert.strip('"').strip("'")
+
     # Step 1: Check if user input file exists
     if util.file_exists(fileToConvert):
         # Step 2: Tell server to expect 1 file
@@ -88,6 +97,9 @@ def convertFile(socket):
 # Process to convert all files in a directory
 def convertDir(socket):
     dirToConvert = input("Path to directory: ")
+    # Remove surrounding quotes or single quotes if they exist
+    if dirToConvert.startswith('"') or dirToConvert.startswith("'"):
+        dirToConvert = dirToConvert.strip('"').strip("'")
     # Step 1: Verify that the directory exists
     if util.dir_exists(dirToConvert):
         files = util.fetch_all_files(dirToConvert)
