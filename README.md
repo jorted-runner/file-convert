@@ -68,7 +68,7 @@ pip install -r requirements.txt
 
 ## Useful Websites
 
-- [Python Official Documentation](https://docs.python.org/3/)
+- [Python Sockets Documentation](https://docs.python.org/3/library/socket.html)
 - [FPDF Documentation](https://pyfpdf.github.io/fpdf2/)
 - [Python Pillow Documentation](https://pillow.readthedocs.io/)
 
