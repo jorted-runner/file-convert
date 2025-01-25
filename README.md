@@ -1,7 +1,6 @@
 # Overview
 
 This project is a client-server networking program that facilitates file transfer and conversion between a client and server. The client can upload files to the server, which processes and converts them (e.g., to PDF format) before sending the results back to the client. The primary goal of this software is to deepen my understanding of socket programming, networking, and file handling in Python.
-{Provide a description the networking program that you wrote. Describe how to use your software.  If you did Client/Server, then you will need to describe how to start both.}
 
 The program allows the user to:
 
