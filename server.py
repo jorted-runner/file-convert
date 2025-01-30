@@ -50,7 +50,7 @@ def conversionBrain(dir, file):
     elif file_extension == ".heic":
         jpg_file_name = os.path.join(dir, file_name + ".jpg")
         converter.convert_heic_to_jpg(file, jpg_file_name)
-        converter.image_to_pdf(file_name, ".jpg")
+        converter.image_to_pdf(dir, file_name, ".jpg")
         os.remove(file)
         os.remove(jpg_file_name)
     elif file_extension == ".msg":

@@ -19,14 +19,15 @@ class ConvertBrain:
             pdf.multi_cell(w=0, h=5, txt = x, align = 'L')
         pdf.output(converted)
     
-    # Convert image file to PDF
     def image_to_pdf(self, dir, file_name, file_extension):
         og_path = os.path.join(dir, file_name + file_extension)
         converted = os.path.join(dir, file_name + ".pdf")
 
+        # Open image and get original dimensions
         with Image.open(og_path) as img:
             img_width, img_height = img.size
-        
+
+        # Convert image dimensions from pixels to points (assuming 300 DPI)
         img_width_pts = img_width * 72 / 300
         img_height_pts = img_height * 72 / 300
 
@@ -34,15 +35,21 @@ class ConvertBrain:
         page_width = 8.5 * 72
         page_height = 11 * 72
 
-        # Calculate the centered position
-        x_offset = (page_width - img_width_pts) / 2
-        y_offset = (page_height - img_height_pts) / 2
+        # Scale image to fit within the page while maintaining aspect ratio
+        scale_factor = min(page_width / img_width_pts, page_height / img_height_pts)
+        new_width_pts = img_width_pts * scale_factor
+        new_height_pts = img_height_pts * scale_factor
 
-        # Create a PDF and add the centered image
+        # Calculate centered position
+        x_offset = (page_width - new_width_pts) / 2
+        y_offset = (page_height - new_height_pts) / 2
+
+        # Create a PDF and add the scaled image
         pdf = FPDF(unit="pt", format=[page_width, page_height])
         pdf.add_page()
-        pdf.image(og_path, x=x_offset, y=y_offset, w=img_width_pts, h=img_height_pts)
+        pdf.image(og_path, x=x_offset, y=y_offset, w=new_width_pts, h=new_height_pts)
         pdf.output(converted)
+
     
     # Convert HEIC file to JPG
     def convert_heic_to_jpg(self, heic_file, jpg_file):
